@@ -9,7 +9,7 @@
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>NuvTools.Storage.Azure.snk</AssemblyOriginatorKeyFile>
 		<Description>Contains helper classes to manipulate Microsoft Azure Storage.</Description>
-		<Version>7.0.0</Version>
+		<Version>7.0.1</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 		<PackageIcon>icon.png</PackageIcon>
@@ -42,7 +42,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.15.0" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.17.0" />
 	</ItemGroup>
 
 	<ItemGroup>
