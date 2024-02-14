@@ -33,7 +33,7 @@ public class AzureFileManagerTests
     {
         var arquivo = await _azureFileManager.GetFileAsync(_arquivo.Name, true);
 
-        Assert.AreEqual(arquivo.Base64String, _arquivo.Base64String);
+        Assert.That(arquivo.Base64String == _arquivo.Base64String);
     }
 
     [Test()]
@@ -41,7 +41,7 @@ public class AzureFileManagerTests
     {
         var arquivo = await _azureFileManager.GetFilesAsync(10);
 
-        Assert.IsNotNull(arquivo);
+        Assert.That(arquivo is not null);
     }
 
     [Test()]
@@ -56,7 +56,7 @@ public class AzureFileManagerTests
         
         var resultado = await _azureFileManager.AddFileAsync(_arquivo);
 
-        Assert.Greater(resultado.Count, 0);
+        Assert.That(resultado.Count > 0);
     }
 
     [Test()]
