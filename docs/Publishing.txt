@@ -1,2 +1,2 @@
-nuget.exe push -Source "nuvtools" -ApiKey az NuvTools.Storage.8.0.0.nupkg
-nuget.exe push -Source "nuvtools" -ApiKey az NuvTools.Storage.Azure.8.0.0.nupkg
+nuget.exe push -Source "nuvtools" -ApiKey az NuvTools.Storage.8.1.0.nupkg
+nuget.exe push -Source "nuvtools" -ApiKey az NuvTools.Storage.Azure.8.1.0.nupkg

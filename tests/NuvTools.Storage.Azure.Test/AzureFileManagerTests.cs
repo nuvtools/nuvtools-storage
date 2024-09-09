@@ -7,12 +7,12 @@ namespace NuvTools.Storage.Azure.Test;
 public class AzureFileManagerTests
 {
     private AzureFileManager _azureFileManager;
-    private readonly File _arquivo = new("teste", "file/plain", "QlJVTk8gTUVMTw==");
+    private readonly File _file = new("test", "file/plain", "QlJVTk8gTUVMTw==");
 
     [SetUp]
     public void Configure()
     {
-        _azureFileManager = new AzureFileManager("UseDevelopmentStorage=true");
+        _azureFileManager = new AzureFileManager("UseDevelopmentStorage=true", "files");
     }
 
 
@@ -31,9 +31,9 @@ public class AzureFileManagerTests
     [Test()]
     public async Task GetFileAsyncTestAsync()
     {
-        var arquivo = await _azureFileManager.GetFileAsync(_arquivo.Name, true);
+        var arquivo = await _azureFileManager.GetFileAsync(_file.Name, true);
 
-        Assert.That(arquivo.Base64String == _arquivo.Base64String);
+        Assert.That(arquivo.Base64String == _file.Base64String);
     }
 
     [Test()]
@@ -47,14 +47,14 @@ public class AzureFileManagerTests
     [Test()]
     public async Task RemoveFileAsyncTestAsync()
     {
-        await _azureFileManager.RemoveFileAsync("teste");
+        await _azureFileManager.RemoveFileAsync("test");
     }
 
     [Test()]
     public async Task AddFileAsyncTestAsync()
     {
         
-        var resultado = await _azureFileManager.AddFileAsync(_arquivo);
+        var resultado = await _azureFileManager.AddFileAsync(_file);
 
         Assert.That(resultado.Count > 0);
     }

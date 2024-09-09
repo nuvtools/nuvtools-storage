@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Azure.Storage.Blobs;
+﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
 namespace NuvTools.Storage.Azure;
@@ -13,7 +10,7 @@ public class AzureFileManager : IFileManager
 
     private readonly Lazy<BlobContainerClient> repository;
 
-    public AzureFileManager(string connectionString, string repositoryName = null)
+    public AzureFileManager(string connectionString, string repositoryName)
     {
         Credencial = new BlobServiceClient(connectionString);
 
@@ -30,7 +27,7 @@ public class AzureFileManager : IFileManager
         return repository.Value.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
     }
 
-    public async Task<IFile> GetFileAsync(string id, bool download = false)
+    public async Task<IFile?> GetFileAsync(string id, bool download = false)
     {
         var blob = repository.Value.GetBlobClient(id);
 
@@ -68,7 +65,7 @@ public class AzureFileManager : IFileManager
 
     public async Task<IReadOnlyList<IFile>> AddFileAsync(params IFile[] files)
     {
-        return await AddFileAsync(null, files);
+        return await AddFileAsync(files);
     }
 
     public async Task<IReadOnlyList<IFile>> AddFileAsync(string rootDir, params IFile[] files)
@@ -84,7 +81,7 @@ public class AzureFileManager : IFileManager
         return resultFiles;
     }
 
-    private async Task<IFile> AddFileAsync(IFile file, string rootDir = null)
+    private async Task<IFile> AddFileAsync(IFile file, string? rootDir = null)
     {
         var fileName = FileHelper.GetFileName(file.Name);
         var fullPathFile = fileName;

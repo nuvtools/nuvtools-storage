@@ -4,9 +4,9 @@ public class File : IFile
 {
     public string Name { get; private set; }
     public string Type { get; private set; }
-    public Uri Uri { get; private set; }
-    public Stream Content { get; private set; }
-    public string Base64String { get; private set; }
+    public Uri? Uri { get; private set; }
+    public Stream? Content { get; private set; }
+    public string? Base64String { get; private set; }
 
     private File(string name, string type)
     {

@@ -1,6 +1,5 @@
 ﻿using Azure.Storage;
 using Azure.Storage.Sas;
-using System;
 
 namespace NuvTools.Storage.Azure;
 
