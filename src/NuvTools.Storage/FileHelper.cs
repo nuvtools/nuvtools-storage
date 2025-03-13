@@ -4,14 +4,11 @@ public static class FileHelper
 {
     public static string GetFileName(string name)
     {
-        var tempName = !string.IsNullOrWhiteSpace(name) ? name : "NoName";
+        if (string.IsNullOrWhiteSpace(name))
+            return "NoName";
 
-        tempName = tempName.Trim('"')
-                    .Replace("&", "and");
+        string tempName = name.Trim('"').Replace("&", "and");
 
-        tempName = Path.GetFileName(tempName);
-
-        return tempName;
+        return Path.GetFileName(tempName) ?? "NoName";
     }
-
 }

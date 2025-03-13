@@ -2,11 +2,12 @@
 
 public interface IFileManager
 {
-    Task<IReadOnlyList<IFile>> AddFileAsync(string rootDir, params IFile[] files);
-    Task<IReadOnlyList<IFile>> AddFileAsync(params IFile[] files);
-    Task<bool> FileExistsAsync(string id);
-    Task RemoveFileAsync(string id);
+    Task<IFile> AddFileAsync(IFile file, string? rootDir = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<IFile>> AddFilesAsync(string rootDir, IFile[] files, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<IFile>> AddFilesAsync(IFile[] files, CancellationToken cancellationToken = default);
+    Task<bool> FileExistsAsync(string id, CancellationToken cancellationToken = default);
+    Task RemoveFileAsync(string id, CancellationToken cancellationToken = default);
     Uri GetAccessRepositoryUri(AccessPermissions permissions = AccessPermissions.Read);
-    Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize);
-    Task<IFile?> GetFileAsync(string id, bool download = false);
+    Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize, CancellationToken cancellationToken = default);
+    Task<IFile?> GetFileAsync(string id, bool download = false, CancellationToken cancellationToken = default);
 }

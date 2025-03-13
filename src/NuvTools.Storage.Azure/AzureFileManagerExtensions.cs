@@ -19,16 +19,16 @@ internal static class AzureFileManagerExtensions
         return new File(item.Name, item.Properties.ContentType, new Uri($"{baseUri}/{item.Name}"));
     }
 
-    public static async Task<IFile> ToFileAsync(this BlobClient item, bool download = false)
+    public static async Task<IFile> ToFileAsync(this BlobClient item, bool download = false, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        var properties = await item.GetPropertiesAsync().ConfigureAwait(false);
+        var properties = await item.GetPropertiesAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (!download) return new File(item.Name, properties.Value.ContentType, item.Uri);
 
         MemoryStream memory = new();
-        await item.DownloadToAsync(memory);
+        await item.DownloadToAsync(memory, cancellationToken);
 
         return new File(item.Name, properties.Value.ContentType, memory);
     }

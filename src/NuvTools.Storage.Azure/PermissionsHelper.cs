@@ -7,45 +7,30 @@ internal class PermissionsHelper
 {
     public static AccountSasPermissions GetPermissions(AccessPermissions permissions)
     {
-        switch (permissions)
+        return permissions switch
         {
-            case AccessPermissions.Read:
-                return AccountSasPermissions.Read;
-            case AccessPermissions.Add:
-                return AccountSasPermissions.Add;
-            case AccessPermissions.Create:
-                return AccountSasPermissions.Create;
-            case AccessPermissions.Update:
-                return AccountSasPermissions.Update;
-            case AccessPermissions.Write:
-                return AccountSasPermissions.Write;
-            case AccessPermissions.Delete:
-                return AccountSasPermissions.Delete;
-            case AccessPermissions.List:
-                return AccountSasPermissions.List;
-            default:
-                return AccountSasPermissions.All;
-        }
+            AccessPermissions.Read => AccountSasPermissions.Read,
+            AccessPermissions.Add => AccountSasPermissions.Add,
+            AccessPermissions.Create => AccountSasPermissions.Create,
+            AccessPermissions.Update => AccountSasPermissions.Update,
+            AccessPermissions.Write => AccountSasPermissions.Write,
+            AccessPermissions.Delete => AccountSasPermissions.Delete,
+            AccessPermissions.List => AccountSasPermissions.List,
+            _ => AccountSasPermissions.All,
+        };
     }
 
     public static BlobContainerSasPermissions GetPermissionsBlob(AccessPermissions permissions)
     {
-        switch (permissions)
+        return permissions switch
         {
-            case AccessPermissions.Read:
-                return BlobContainerSasPermissions.Read;
-            case AccessPermissions.Add:
-                return BlobContainerSasPermissions.Add;
-            case AccessPermissions.Create:
-                return BlobContainerSasPermissions.Create;
-            case AccessPermissions.Write:
-                return BlobContainerSasPermissions.Write;
-            case AccessPermissions.Delete:
-                return BlobContainerSasPermissions.Delete;
-            case AccessPermissions.List:
-                return BlobContainerSasPermissions.List;
-            default:
-                return BlobContainerSasPermissions.All;
-        }
+            AccessPermissions.Read => BlobContainerSasPermissions.Read,
+            AccessPermissions.Add => BlobContainerSasPermissions.Add,
+            AccessPermissions.Create => BlobContainerSasPermissions.Create,
+            AccessPermissions.Write => BlobContainerSasPermissions.Write,
+            AccessPermissions.Delete => BlobContainerSasPermissions.Delete,
+            AccessPermissions.List => BlobContainerSasPermissions.List,
+            _ => BlobContainerSasPermissions.All,
+        };
     }
 }

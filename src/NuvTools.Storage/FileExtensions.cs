@@ -19,7 +19,7 @@ public static class FileExtensions
         if (value.Content is null) return null;
 
         byte[] inArray = new byte[(int)value.Content.Length];
-        value.Content.Read(inArray, 0, (int)value.Content.Length);
+        value.Content.ReadExactly(inArray, 0, (int)value.Content.Length);
 
         return Convert.ToBase64String(inArray);
     }

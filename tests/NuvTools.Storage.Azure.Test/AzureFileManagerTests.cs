@@ -8,6 +8,7 @@ public class AzureFileManagerTests
 {
     private AzureFileManager _azureFileManager;
     private readonly File _file = new("test", "file/plain", "QlJVTk8gTUVMTw==");
+    private readonly File _file2 = new("test", "file/plain", "QlJVTk8gTUVMTw==");
 
     [SetUp]
     public void Configure()
@@ -53,9 +54,14 @@ public class AzureFileManagerTests
     [Test()]
     public async Task AddFileAsyncTestAsync()
     {
-        
         var resultado = await _azureFileManager.AddFileAsync(_file);
+        Assert.That(resultado.Uri is not null);
+    }
 
+    [Test()]
+    public async Task AddFilesAsyncTestAsync()
+    {
+        var resultado = await _azureFileManager.AddFilesAsync([_file, _file2]);
         Assert.That(resultado.Count > 0);
     }
 

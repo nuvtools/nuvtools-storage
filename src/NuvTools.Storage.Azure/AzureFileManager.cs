@@ -27,78 +27,79 @@ public class AzureFileManager : IFileManager
         return repository.Value.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
     }
 
-    public async Task<IFile?> GetFileAsync(string id, bool download = false)
+    public async Task<IFile?> GetFileAsync(string id, bool download = false, CancellationToken cancellationToken = default)
     {
-        var blob = repository.Value.GetBlobClient(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
 
-        if (await blob.ExistsAsync().ConfigureAwait(false))
-            return await blob.ToFileAsync(download).ConfigureAwait(false);
+        BlobContainerClient repo = repository.Value;
+        BlobClient blob = repo.GetBlobClient(id);
 
-        return null;
+        return await blob.ExistsAsync(cancellationToken).ConfigureAwait(false)
+            ? await blob.ToFileAsync(download, cancellationToken).ConfigureAwait(false)
+            : null;
     }
 
-    public async Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize)
+    public async Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize, CancellationToken cancellationToken = default)
     {
-        if (!await repository.Value.ExistsAsync().ConfigureAwait(false))
-            await repository.Value.CreateAsync(PublicAccessType.Blob, null, null).ConfigureAwait(false);
+        BlobContainerClient repo = repository.Value;
 
-        var fileList = new List<IFile>();
+        if (!await repo.ExistsAsync(cancellationToken).ConfigureAwait(false))
+            throw new InvalidOperationException("Repository not found");
 
-        var pages = repository.Value.GetBlobsAsync().AsPages(default, pageSize);
+        List<IFile> files = new(pageSize ?? 0);
 
-        await foreach (var page in pages)
+        await foreach (global::Azure.Page<BlobItem> page in repo.GetBlobsAsync(cancellationToken: cancellationToken).AsPages(default, pageSize))
         {
-            foreach (var item in page.Values)
-            {
-                fileList.Add(item.ToFile(repository.Value.Uri));
-            }
+            files.AddRange(page.Values.Select(item => item.ToFile(repo.Uri)));
         }
 
-        return fileList;
+        return files;
     }
 
-    public async Task RemoveFileAsync(string id)
+    public async Task RemoveFileAsync(string id, CancellationToken cancellationToken = default)
     {
-        var blob = repository.Value.GetBlobClient(id);
-        await blob.DeleteAsync().ConfigureAwait(false);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
+
+        BlobClient blob = repository.Value.GetBlobClient(id);
+        await blob.DeleteIfExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<IFile>> AddFileAsync(params IFile[] files)
+    public Task<IReadOnlyList<IFile>> AddFilesAsync(IFile[] files, CancellationToken cancellationToken = default)
     {
-        return await AddFileAsync(files);
+        return AddFilesAsync(string.Empty, files, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<IFile>> AddFileAsync(string rootDir, params IFile[] files)
+    public async Task<IReadOnlyList<IFile>> AddFilesAsync(string rootDir, IFile[] files, CancellationToken cancellationToken = default)
     {
-        var resultFiles = new List<IFile>();
+        ArgumentNullException.ThrowIfNull(files, nameof(files));
 
-        foreach (var file in files)
-        {
-            var uploadedFile = await AddFileAsync(file, rootDir).ConfigureAwait(false);
-            resultFiles.Add(uploadedFile);
-        }
+        if (files.Length == 0)
+            throw new ArgumentException("No files to upload", nameof(files));
 
-        return resultFiles;
+        if (cancellationToken.IsCancellationRequested)
+            return await Task.FromCanceled<IReadOnlyList<IFile>>(cancellationToken);
+
+        IEnumerable<Task<IFile>> uploadTasks = files.Select(file => AddFileAsync(file, rootDir, cancellationToken));
+
+        return await Task.WhenAll(uploadTasks).ConfigureAwait(false);
     }
 
-    private async Task<IFile> AddFileAsync(IFile file, string? rootDir = null)
+    public async Task<IFile> AddFileAsync(IFile file, string? rootDir = null, CancellationToken cancellationToken = default)
     {
-        var fileName = FileHelper.GetFileName(file.Name);
-        var fullPathFile = fileName;
+        ArgumentNullException.ThrowIfNull(file, nameof(file));
 
-        if (rootDir != null) fullPathFile = rootDir + "/" + fileName;
+        string fileName = FileHelper.GetFileName(file.Name);
+        string fullPathFile = string.IsNullOrEmpty(rootDir) ? fileName : $"{rootDir}/{fileName}";
 
-        var blob = repository.Value.GetBlobClient(fullPathFile);
-        await blob.UploadAsync(file.Content).ConfigureAwait(false);
+        BlobClient blob = repository.Value.GetBlobClient(fullPathFile);
+        await blob.UploadAsync(file.Content, cancellationToken).ConfigureAwait(false);
 
-        return await blob.ToFileAsync();
+        return await blob.ToFileAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<bool> FileExistsAsync(string id)
+    public async Task<bool> FileExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        var blob = repository.Value.GetBlobClient(id);
-        return await blob.ExistsAsync().ConfigureAwait(false);
+        BlobClient blob = repository.Value.GetBlobClient(id);
+        return await blob.ExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
-
-
 }
