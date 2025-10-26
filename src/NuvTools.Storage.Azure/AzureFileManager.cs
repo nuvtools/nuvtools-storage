@@ -11,9 +11,16 @@ public class AzureFileManager : IFileManager
     private readonly Lazy<BlobContainerClient> repository;
 
     public AzureFileManager(string connectionString, string repositoryName)
+        : this(new BlobServiceClient(connectionString), repositoryName)
     {
-        Credencial = new BlobServiceClient(connectionString);
+    }
 
+    public AzureFileManager(BlobServiceClient serviceClient, string repositoryName)
+    {
+        ArgumentNullException.ThrowIfNull(serviceClient);
+        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryName);
+
+        Credencial = serviceClient;
         RepositoryName = repositoryName;
 
         repository = new Lazy<BlobContainerClient>(() =>
@@ -22,17 +29,18 @@ public class AzureFileManager : IFileManager
         });
     }
 
+    protected BlobContainerClient Repository => repository.Value;
+
     public Uri GetAccessRepositoryUri(AccessPermissions permissions = AccessPermissions.Read)
     {
-        return repository.Value.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
+        return Repository.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
     }
 
     public async Task<IFile?> GetFileAsync(string id, bool download = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
 
-        BlobContainerClient repo = repository.Value;
-        BlobClient blob = repo.GetBlobClient(id);
+        BlobClient blob = Repository.GetBlobClient(id);
 
         return await blob.ExistsAsync(cancellationToken).ConfigureAwait(false)
             ? await blob.ToFileAsync(download, cancellationToken).ConfigureAwait(false)
@@ -41,16 +49,14 @@ public class AzureFileManager : IFileManager
 
     public async Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize, CancellationToken cancellationToken = default)
     {
-        BlobContainerClient repo = repository.Value;
-
-        if (!await repo.ExistsAsync(cancellationToken).ConfigureAwait(false))
+        if (!await Repository.ExistsAsync(cancellationToken).ConfigureAwait(false))
             throw new InvalidOperationException("Repository not found");
 
         List<IFile> files = new(pageSize ?? 0);
 
-        await foreach (global::Azure.Page<BlobItem> page in repo.GetBlobsAsync(cancellationToken: cancellationToken).AsPages(default, pageSize))
+        await foreach (global::Azure.Page<BlobItem> page in Repository.GetBlobsAsync(cancellationToken: cancellationToken).AsPages(default, pageSize))
         {
-            files.AddRange(page.Values.Select(item => item.ToFile(repo.Uri)));
+            files.AddRange(page.Values.Select(item => item.ToFile(Repository.Uri)));
         }
 
         return files;
@@ -60,14 +66,12 @@ public class AzureFileManager : IFileManager
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
 
-        BlobClient blob = repository.Value.GetBlobClient(id);
+        BlobClient blob = Repository.GetBlobClient(id);
         await blob.DeleteIfExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public Task<IReadOnlyList<IFile>> AddFilesAsync(IFile[] files, CancellationToken cancellationToken = default)
-    {
-        return AddFilesAsync(string.Empty, files, cancellationToken);
-    }
+        => AddFilesAsync(string.Empty, files, cancellationToken);
 
     public async Task<IReadOnlyList<IFile>> AddFilesAsync(string rootDir, IFile[] files, CancellationToken cancellationToken = default)
     {
@@ -91,7 +95,7 @@ public class AzureFileManager : IFileManager
         string fileName = FileHelper.GetFileName(file.Name);
         string fullPathFile = string.IsNullOrEmpty(rootDir) ? fileName : $"{rootDir}/{fileName}";
 
-        BlobClient blob = repository.Value.GetBlobClient(fullPathFile);
+        BlobClient blob = Repository.GetBlobClient(fullPathFile);
         await blob.UploadAsync(file.Content, cancellationToken).ConfigureAwait(false);
 
         return await blob.ToFileAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -99,7 +103,7 @@ public class AzureFileManager : IFileManager
 
     public async Task<bool> FileExistsAsync(string id, CancellationToken cancellationToken = default)
     {
-        BlobClient blob = repository.Value.GetBlobClient(id);
+        BlobClient blob = Repository.GetBlobClient(id);
         return await blob.ExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
