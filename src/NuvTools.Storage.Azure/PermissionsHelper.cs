@@ -3,8 +3,16 @@ using Azure.Storage.Sas;
 
 namespace NuvTools.Storage.Azure;
 
+/// <summary>
+/// Internal helper class for converting NuvTools access permissions to Azure Storage SAS permissions.
+/// </summary>
 internal class PermissionsHelper
 {
+    /// <summary>
+    /// Converts NuvTools <see cref="AccessPermissions"/> to Azure <see cref="AccountSasPermissions"/>.
+    /// </summary>
+    /// <param name="permissions">The NuvTools access permissions to convert.</param>
+    /// <returns>The corresponding Azure account-level SAS permissions.</returns>
     public static AccountSasPermissions GetPermissions(AccessPermissions permissions)
     {
         return permissions switch
@@ -20,6 +28,11 @@ internal class PermissionsHelper
         };
     }
 
+    /// <summary>
+    /// Converts NuvTools <see cref="AccessPermissions"/> to Azure <see cref="BlobContainerSasPermissions"/>.
+    /// </summary>
+    /// <param name="permissions">The NuvTools access permissions to convert.</param>
+    /// <returns>The corresponding Azure blob container-level SAS permissions.</returns>
     public static BlobContainerSasPermissions GetPermissionsBlob(AccessPermissions permissions)
     {
         return permissions switch

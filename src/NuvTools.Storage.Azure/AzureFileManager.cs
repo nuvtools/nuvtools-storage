@@ -3,18 +3,43 @@ using Azure.Storage.Blobs.Models;
 
 namespace NuvTools.Storage.Azure;
 
+/// <summary>
+/// Provides file management operations for Azure Blob Storage.
+/// Implements <see cref="IFileManager"/> using Azure Blob Storage as the underlying storage provider.
+/// </summary>
 public class AzureFileManager : IFileManager
 {
+    /// <summary>
+    /// Gets the Azure Blob Service client used for storage operations.
+    /// </summary>
     protected BlobServiceClient Credencial { get; }
+
+    /// <summary>
+    /// Gets the name of the blob container (repository) where files are stored.
+    /// </summary>
     private string RepositoryName { get; }
 
     private readonly Lazy<BlobContainerClient> repository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureFileManager"/> class using a connection string.
+    /// </summary>
+    /// <param name="connectionString">The Azure Storage connection string.</param>
+    /// <param name="repositoryName">The name of the blob container to use as the file repository.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="connectionString"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="repositoryName"/> is null, empty, or whitespace.</exception>
     public AzureFileManager(string connectionString, string repositoryName)
         : this(new BlobServiceClient(connectionString), repositoryName)
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureFileManager"/> class using a Blob Service client.
+    /// </summary>
+    /// <param name="serviceClient">The Azure Blob Service client.</param>
+    /// <param name="repositoryName">The name of the blob container to use as the file repository.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceClient"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="repositoryName"/> is null, empty, or whitespace.</exception>
     public AzureFileManager(BlobServiceClient serviceClient, string repositoryName)
     {
         ArgumentNullException.ThrowIfNull(serviceClient);
@@ -29,13 +54,19 @@ public class AzureFileManager : IFileManager
         });
     }
 
+    /// <summary>
+    /// Gets the blob container client for the configured repository.
+    /// The client is lazily initialized on first access.
+    /// </summary>
     protected BlobContainerClient Repository => repository.Value;
 
+    /// <inheritdoc />
     public Uri GetAccessRepositoryUri(AccessPermissions permissions = AccessPermissions.Read)
     {
         return Repository.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
     }
 
+    /// <inheritdoc />
     public async Task<IFile?> GetFileAsync(string id, bool download = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
@@ -47,6 +78,8 @@ public class AzureFileManager : IFileManager
             : null;
     }
 
+    /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">Thrown when the blob container does not exist.</exception>
     public async Task<IReadOnlyList<IFile>> GetFilesAsync(int? pageSize, CancellationToken cancellationToken = default)
     {
         if (!await Repository.ExistsAsync(cancellationToken).ConfigureAwait(false))
@@ -62,6 +95,7 @@ public class AzureFileManager : IFileManager
         return files;
     }
 
+    /// <inheritdoc />
     public async Task RemoveFileAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id, nameof(id));
@@ -70,9 +104,12 @@ public class AzureFileManager : IFileManager
         await blob.DeleteIfExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<IFile>> AddFilesAsync(IFile[] files, CancellationToken cancellationToken = default)
         => AddFilesAsync(string.Empty, files, cancellationToken);
 
+    /// <inheritdoc />
+    /// <exception cref="ArgumentException">Thrown when the files array is empty.</exception>
     public async Task<IReadOnlyList<IFile>> AddFilesAsync(string rootDir, IFile[] files, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(files, nameof(files));
@@ -88,6 +125,7 @@ public class AzureFileManager : IFileManager
         return await Task.WhenAll(uploadTasks).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<IFile> AddFileAsync(IFile file, string? rootDir = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file, nameof(file));
@@ -101,6 +139,7 @@ public class AzureFileManager : IFileManager
         return await blob.ToFileAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<bool> FileExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         BlobClient blob = Repository.GetBlobClient(id);
