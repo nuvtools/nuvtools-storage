@@ -46,4 +46,23 @@ internal class PermissionsHelper
             _ => BlobContainerSasPermissions.All,
         };
     }
+
+    /// <summary>
+    /// Converts NuvTools <see cref="AccessPermissions"/> to Azure <see cref="BlobSasPermissions"/>.
+    /// </summary>
+    /// <param name="permissions">The NuvTools access permissions to convert.</param>
+    /// <returns>The corresponding Azure blob-level SAS permissions.</returns>
+    public static BlobSasPermissions GetBlobSasPermissions(AccessPermissions permissions)
+    {
+        return permissions switch
+        {
+            AccessPermissions.Read => BlobSasPermissions.Read,
+            AccessPermissions.Add => BlobSasPermissions.Add,
+            AccessPermissions.Create => BlobSasPermissions.Create,
+            AccessPermissions.Write => BlobSasPermissions.Write,
+            AccessPermissions.Delete => BlobSasPermissions.Delete,
+            AccessPermissions.List => BlobSasPermissions.List,
+            _ => BlobSasPermissions.All,
+        };
+    }
 }

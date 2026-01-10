@@ -145,4 +145,25 @@ public class AzureFileManager : IFileManager
         BlobClient blob = Repository.GetBlobClient(id);
         return await blob.ExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
+
+    /// <inheritdoc />
+    public Uri GetFileSasUri(string blobPath, TimeSpan validFor, AccessPermissions permissions = AccessPermissions.Read)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(blobPath, nameof(blobPath));
+
+        BlobClient blob = Repository.GetBlobClient(blobPath);
+        return blob.GenerateSasUri(PermissionsHelper.GetBlobSasPermissions(permissions), DateTimeOffset.UtcNow.Add(validFor));
+    }
+
+    /// <inheritdoc />
+    public async Task<IFile> AddFileAsync(Stream stream, string blobPath, string contentType, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream, nameof(stream));
+        ArgumentException.ThrowIfNullOrWhiteSpace(blobPath, nameof(blobPath));
+
+        BlobClient blob = Repository.GetBlobClient(blobPath);
+        await blob.UploadAsync(stream, new BlobHttpHeaders { ContentType = contentType }, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return await blob.ToFileAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
 }
