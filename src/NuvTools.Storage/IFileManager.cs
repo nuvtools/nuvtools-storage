@@ -48,11 +48,11 @@ public interface IFileManager
     Task RemoveFileAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a URI for accessing the storage repository with specified permissions.
+    /// Gets a signed URI for accessing the storage repository with specified permissions.
     /// </summary>
     /// <param name="permissions">The access permissions to grant. Defaults to <see cref="AccessPermissions.Read"/>.</param>
-    /// <returns>A URI that can be used to access the repository with the specified permissions.</returns>
-    Uri GetAccessRepositoryUri(AccessPermissions permissions = AccessPermissions.Read);
+    /// <returns>A signed URI that can be used to access the repository with the specified permissions.</returns>
+    Uri GetRepositorySignedUri(AccessPermissions permissions = AccessPermissions.Read);
 
     /// <summary>
     /// Retrieves a paginated list of files from the storage repository.
@@ -72,21 +72,21 @@ public interface IFileManager
     Task<IFile?> GetFileAsync(string id, bool download = false, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a SAS URI for accessing a specific file with specified permissions.
+    /// Gets a signed URI for accessing a specific file with specified permissions.
     /// </summary>
-    /// <param name="blobPath">The path to the blob in the container.</param>
-    /// <param name="validFor">The duration for which the SAS URI should be valid.</param>
+    /// <param name="filePath">The path to the file in the repository.</param>
+    /// <param name="validFor">The duration for which the signed URI should be valid.</param>
     /// <param name="permissions">The access permissions to grant. Defaults to <see cref="AccessPermissions.Read"/>.</param>
-    /// <returns>A URI that can be used to access the file with the specified permissions.</returns>
-    Uri GetFileSasUri(string blobPath, TimeSpan validFor, AccessPermissions permissions = AccessPermissions.Read);
+    /// <returns>A signed URI that can be used to access the file with the specified permissions.</returns>
+    Uri GetFileSignedUri(string filePath, TimeSpan validFor, AccessPermissions permissions = AccessPermissions.Read);
 
     /// <summary>
-    /// Uploads a stream directly to blob storage at the specified path.
+    /// Uploads a stream directly to storage at the specified path.
     /// </summary>
     /// <param name="stream">The stream containing the file content.</param>
-    /// <param name="blobPath">The full path where the file should be stored in the container.</param>
+    /// <param name="filePath">The full path where the file should be stored in the repository.</param>
     /// <param name="contentType">The MIME type of the file content.</param>
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task representing the asynchronous operation, containing the uploaded file metadata.</returns>
-    Task<IFile> AddFileAsync(Stream stream, string blobPath, string contentType, CancellationToken cancellationToken = default);
+    Task<IFile> AddFileAsync(Stream stream, string filePath, string contentType, CancellationToken cancellationToken = default);
 }

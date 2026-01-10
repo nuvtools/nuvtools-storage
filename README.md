@@ -27,7 +27,7 @@ NuvTools.Storage provides a clean, intuitive abstraction layer for file storage 
 
 The core library defines the foundational abstractions:
 
-- **`IFileManager`** - Interface for managing file storage operations (add, get, remove, list)
+- **`IFileManager`** - Interface for managing file storage operations (add, get, remove, list, SAS URI generation)
 - **`IFile`** - Represents a file with metadata and content in multiple formats (URI, Stream, Base64)
 - **`File`** - Concrete implementation supporting three initialization modes
 - **`AccessPermissions`** - Enum for fine-grained access control (Read, Write, Delete, List, etc.)
@@ -38,10 +38,12 @@ The core library defines the foundational abstractions:
 Azure Blob Storage implementation:
 
 - **`AzureFileManager`** - Full `IFileManager` implementation for Azure Blob Storage
-- **`Security`** - Helper class for generating SAS (Shared Access Signature) tokens
+- **`Security`** - Helper class for generating signed tokens for Azure Storage
 - Automatic conversion between Azure SDK types and NuvTools abstractions
 - Support for paginated file listing
 - Parallel batch file uploads
+- Direct stream uploads to specific blob paths
+- File-level signed URI generation with custom expiration
 - Built on Azure.Storage.Blobs SDK
 
 ## Features
@@ -50,10 +52,10 @@ Azure Blob Storage implementation:
 ✅ **Async/Await** - Fully asynchronous API with `CancellationToken` support
 ✅ **Multiple Content Formats** - Work with files as URIs, Streams, or Base64 strings
 ✅ **Azure Integration** - Production-ready Azure Blob Storage implementation
-✅ **SAS Token Generation** - Built-in support for Azure Shared Access Signatures
+✅ **Signed URI Generation** - Container-level and file-level signed URIs with custom expiration
 ✅ **Batch Operations** - Upload multiple files in parallel with `Task.WhenAll`
+✅ **Direct Stream Uploads** - Upload streams directly to specific blob paths
 ✅ **Comprehensive Documentation** - Full XML documentation for IntelliSense
-✅ **Strong-Named Assemblies** - Signed for use in strong-named projects
 ✅ **Multi-Targeting** - Supports .NET 8, 9, and 10
 
 ## Installation
@@ -119,6 +121,14 @@ var file = new File("remote.txt", "text/plain", new Uri("https://..."));
 // Upload a single file to a specific directory
 var uploadedFile = await fileManager.AddFileAsync(file, rootDir: "documents");
 
+// Upload directly from a stream with explicit path
+await using var stream = File.OpenRead("report.pdf");
+var uploadedFile = await fileManager.AddFileAsync(
+    stream,
+    filePath: "reports/2026/report.pdf",
+    contentType: "application/pdf"
+);
+
 // Batch upload multiple files in parallel
 var files = new[] { file1, file2, file3 };
 var uploadedFiles = await fileManager.AddFilesAsync(files);
@@ -154,14 +164,21 @@ bool exists = await fileManager.FileExistsAsync("document.pdf");
 await fileManager.RemoveFileAsync("document.pdf");
 ```
 
-### Generating SAS Tokens
+### Generating Signed URIs
 
 ```csharp
-// Generate a read-only SAS URI valid for 24 hours
-var sasUri = fileManager.GetAccessRepositoryUri(AccessPermissions.Read);
+// Generate a read-only signed URI for the entire container (valid for 24 hours)
+var containerSignedUri = fileManager.GetRepositorySignedUri(AccessPermissions.Read);
 
-// Generate SAS token with custom permissions
-var sasToken = Security.GetAccessAccountToken(
+// Generate a signed URI for a specific file with custom expiration
+var fileSignedUri = fileManager.GetFileSignedUri(
+    filePath: "documents/report.pdf",
+    validFor: TimeSpan.FromHours(1),
+    permissions: AccessPermissions.Read
+);
+
+// Generate signed token with custom permissions
+var signedToken = Security.GetAccountSignedToken(
     accountName: "myaccount",
     accountKey: "key",
     permissions: AccessPermissions.Read | AccessPermissions.List
@@ -229,4 +246,4 @@ XML documentation files are included in the NuGet packages for seamless integrat
 
 Licensed under the [MIT License](LICENSE).
 
-Copyright © 2025 Nuv Tools
+Copyright © 2026 Nuv Tools

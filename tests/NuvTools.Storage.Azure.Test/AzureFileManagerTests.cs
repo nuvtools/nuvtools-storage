@@ -83,14 +83,14 @@ namespace NuvTools.Storage.Azure.Test
         }
 
         [Test]
-        public void GetAccessRepositoryUri_ShouldReturnValidUri()
+        public void GetRepositorySignedUri_ShouldReturnValidUri()
         {
             var fakeUri = new Uri("https://fake.blob.core.windows.net/files?sig=fake");
             _mockContainerClient!
                 .Setup(c => c.GenerateSasUri(It.IsAny<BlobContainerSasPermissions>(), It.IsAny<DateTimeOffset>()))
                 .Returns(fakeUri);
 
-            var uri = _fileManager!.GetAccessRepositoryUri();
+            var uri = _fileManager!.GetRepositorySignedUri();
 
             Assert.That(uri, Is.EqualTo(fakeUri));
         }

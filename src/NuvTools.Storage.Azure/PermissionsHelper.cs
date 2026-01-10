@@ -13,7 +13,7 @@ internal class PermissionsHelper
     /// </summary>
     /// <param name="permissions">The NuvTools access permissions to convert.</param>
     /// <returns>The corresponding Azure account-level SAS permissions.</returns>
-    public static AccountSasPermissions GetPermissions(AccessPermissions permissions)
+    public static AccountSasPermissions GetAccountSasPermissions(AccessPermissions permissions)
     {
         return permissions switch
         {
@@ -33,7 +33,7 @@ internal class PermissionsHelper
     /// </summary>
     /// <param name="permissions">The NuvTools access permissions to convert.</param>
     /// <returns>The corresponding Azure blob container-level SAS permissions.</returns>
-    public static BlobContainerSasPermissions GetPermissionsBlob(AccessPermissions permissions)
+    public static BlobContainerSasPermissions GetContainerSasPermissions(AccessPermissions permissions)
     {
         return permissions switch
         {

@@ -9,14 +9,14 @@ namespace NuvTools.Storage.Azure;
 public class Security
 {
     /// <summary>
-    /// Generates a Shared Access Signature (SAS) token for accessing Azure Storage account resources.
+    /// Generates a signed token for accessing Azure Storage account resources.
     /// The token is valid for 24 hours and uses HTTPS protocol.
     /// </summary>
     /// <param name="accountName">The name of the Azure Storage account.</param>
     /// <param name="accountKey">The access key for the Azure Storage account.</param>
     /// <param name="permissions">The access permissions to grant. Defaults to <see cref="AccessPermissions.Read"/>.</param>
-    /// <returns>A SAS token string that can be appended to Azure Storage URLs for authenticated access.</returns>
-    public static string GetAccessAccountToken(string accountName, string accountKey, AccessPermissions permissions = AccessPermissions.Read)
+    /// <returns>A signed token string that can be appended to storage URLs for authenticated access.</returns>
+    public static string GetAccountSignedToken(string accountName, string accountKey, AccessPermissions permissions = AccessPermissions.Read)
     {
         AccountSasBuilder sasBuilder = new()
         {
@@ -26,7 +26,7 @@ public class Security
             Protocol = SasProtocol.Https
         };
 
-        sasBuilder.SetPermissions(PermissionsHelper.GetPermissions(permissions));
+        sasBuilder.SetPermissions(PermissionsHelper.GetAccountSasPermissions(permissions));
 
         return sasBuilder.ToSasQueryParameters(new StorageSharedKeyCredential(accountName, accountKey)).ToString();
     }

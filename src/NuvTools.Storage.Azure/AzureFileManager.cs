@@ -61,9 +61,9 @@ public class AzureFileManager : IFileManager
     protected BlobContainerClient Repository => repository.Value;
 
     /// <inheritdoc />
-    public Uri GetAccessRepositoryUri(AccessPermissions permissions = AccessPermissions.Read)
+    public Uri GetRepositorySignedUri(AccessPermissions permissions = AccessPermissions.Read)
     {
-        return Repository.GenerateSasUri(PermissionsHelper.GetPermissionsBlob(permissions), DateTime.UtcNow.AddHours(24));
+        return Repository.GenerateSasUri(PermissionsHelper.GetContainerSasPermissions(permissions), DateTime.UtcNow.AddHours(24));
     }
 
     /// <inheritdoc />
@@ -147,21 +147,21 @@ public class AzureFileManager : IFileManager
     }
 
     /// <inheritdoc />
-    public Uri GetFileSasUri(string blobPath, TimeSpan validFor, AccessPermissions permissions = AccessPermissions.Read)
+    public Uri GetFileSignedUri(string filePath, TimeSpan validFor, AccessPermissions permissions = AccessPermissions.Read)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(blobPath, nameof(blobPath));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath, nameof(filePath));
 
-        BlobClient blob = Repository.GetBlobClient(blobPath);
+        BlobClient blob = Repository.GetBlobClient(filePath);
         return blob.GenerateSasUri(PermissionsHelper.GetBlobSasPermissions(permissions), DateTimeOffset.UtcNow.Add(validFor));
     }
 
     /// <inheritdoc />
-    public async Task<IFile> AddFileAsync(Stream stream, string blobPath, string contentType, CancellationToken cancellationToken = default)
+    public async Task<IFile> AddFileAsync(Stream stream, string filePath, string contentType, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream, nameof(stream));
-        ArgumentException.ThrowIfNullOrWhiteSpace(blobPath, nameof(blobPath));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath, nameof(filePath));
 
-        BlobClient blob = Repository.GetBlobClient(blobPath);
+        BlobClient blob = Repository.GetBlobClient(filePath);
         await blob.UploadAsync(stream, new BlobHttpHeaders { ContentType = contentType }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return await blob.ToFileAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
