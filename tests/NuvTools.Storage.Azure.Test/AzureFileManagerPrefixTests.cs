@@ -167,18 +167,18 @@ namespace NuvTools.Storage.Azure.Test
         }
 
         [Test]
-        public void CopyFileAsync_ShouldThrowFileNotFound_WhenTheSourceDoesNotExist()
+        public async Task CopyFileAsync_ShouldThrowFileNotFound_WhenTheSourceDoesNotExist()
         {
             Missing("docs/gone.pdf");
 
-            Assert.ThrowsAsync<FileNotFoundException>(() => _fileManager!.CopyFileAsync("docs/gone.pdf", "archive/gone.pdf"));
+            await Assert.ThrowsAsync<FileNotFoundException>(() => _fileManager!.CopyFileAsync("docs/gone.pdf", "archive/gone.pdf"));
             VerifyUploaded("archive/gone.pdf", Times.Never());
         }
 
         [Test]
-        public void CopyFileAsync_ShouldRefuseTheSamePath()
+        public async Task CopyFileAsync_ShouldRefuseTheSamePath()
         {
-            Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.CopyFileAsync("docs/a.pdf", "docs/a.pdf"));
+            await Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.CopyFileAsync("docs/a.pdf", "docs/a.pdf"));
         }
 
         [Test]
@@ -192,13 +192,13 @@ namespace NuvTools.Storage.Azure.Test
         }
 
         [Test]
-        public void MoveFileAsync_ShouldLeaveTheSource_WhenTheCopyFails()
+        public async Task MoveFileAsync_ShouldLeaveTheSource_WhenTheCopyFails()
         {
             Blob("docs/renamed.pdf")
                 .Setup(b => b.UploadAsync(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new RequestFailedException(500, "The upload failed."));
 
-            Assert.ThrowsAsync<RequestFailedException>(() => _fileManager!.MoveFileAsync("docs/a.pdf", "docs/renamed.pdf"));
+            await Assert.ThrowsAsync<RequestFailedException>(() => _fileManager!.MoveFileAsync("docs/a.pdf", "docs/renamed.pdf"));
             VerifyDeleted("docs/a.pdf", Times.Never());
         }
 
@@ -227,9 +227,9 @@ namespace NuvTools.Storage.Azure.Test
         }
 
         [Test]
-        public void MoveFilesAsync_ShouldRefuseTheSamePrefix()
+        public async Task MoveFilesAsync_ShouldRefuseTheSamePrefix()
         {
-            Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.MoveFilesAsync("drafts/", "drafts/"));
+            await Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.MoveFilesAsync("drafts/", "drafts/"));
         }
 
         [Test]
@@ -246,9 +246,9 @@ namespace NuvTools.Storage.Azure.Test
 
         [TestCase("")]
         [TestCase("  ")]
-        public void RemoveFilesAsync_ShouldRefuseAnEmptyPrefix(string prefix)
+        public async Task RemoveFilesAsync_ShouldRefuseAnEmptyPrefix(string prefix)
         {
-            Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.RemoveFilesAsync(prefix));
+            await Assert.ThrowsAsync<ArgumentException>(() => _fileManager!.RemoveFilesAsync(prefix));
             _container!.Verify(c => c.GetBlobsAsync(It.IsAny<BlobTraits>(), It.IsAny<BlobStates>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never());
         }
     }

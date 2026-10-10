@@ -162,7 +162,7 @@ namespace NuvTools.Storage.Azure.Test
 
             await Task.Yield();
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _fileManager!.GetFilesAsync(10));
         }
 
