@@ -89,4 +89,74 @@ public interface IFileManager
     /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
     /// <returns>A task representing the asynchronous operation, containing the uploaded file metadata.</returns>
     Task<IFile> AddFileAsync(Stream stream, string filePath, string contentType, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists the files whose path starts with a prefix, without downloading them.
+    /// </summary>
+    /// <param name="prefix">
+    /// The beginning of the paths to list, such as <c>invoices/2026/</c>. A repository has no real
+    /// folders: a folder is the prefix its files share. <c>null</c> or empty lists every file.
+    /// </param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>The files found, as the provider returns them, read page by page as the sequence is consumed.</returns>
+    IAsyncEnumerable<FileDescriptor> ListFilesAsync(string? prefix = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Writes the content of a file to a stream.
+    /// </summary>
+    /// <param name="filePath">The path of the file in the repository.</param>
+    /// <param name="destination">The stream the content is written to. It is left open.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation, containing <c>true</c> if the file was downloaded, or <c>false</c> if it does not exist.</returns>
+    Task<bool> DownloadFileAsync(string filePath, Stream destination, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copies a file to another path in the same repository, replacing what is there.
+    /// </summary>
+    /// <param name="sourcePath">The path of the file to copy.</param>
+    /// <param name="targetPath">The path of the copy.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation, containing the metadata of the copy.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when <paramref name="sourcePath"/> does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown when both paths are the same.</exception>
+    Task<IFile> CopyFileAsync(string sourcePath, string targetPath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Moves a file to another path in the same repository, which is also how a file is renamed.
+    /// </summary>
+    /// <param name="sourcePath">The path of the file to move.</param>
+    /// <param name="targetPath">The new path of the file. What is there is replaced.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation, containing the metadata of the file at its new path.</returns>
+    /// <remarks>
+    /// The file is copied and then the original is removed. If the removal fails the file exists at
+    /// both paths; it is never lost.
+    /// </remarks>
+    /// <exception cref="FileNotFoundException">Thrown when <paramref name="sourcePath"/> does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown when both paths are the same.</exception>
+    Task<IFile> MoveFileAsync(string sourcePath, string targetPath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Moves every file whose path starts with a prefix to another prefix, keeping the rest of each
+    /// path — which is how a folder is renamed.
+    /// </summary>
+    /// <param name="sourcePrefix">The beginning of the paths to move, such as <c>drafts/</c>.</param>
+    /// <param name="targetPrefix">What replaces <paramref name="sourcePrefix"/> in each path, such as <c>final/</c>.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation, containing the number of files moved.</returns>
+    /// <remarks>
+    /// Files are moved one at a time. If it stops midway, the files already moved stay at the target
+    /// and the others at the source; running it again finishes the move.
+    /// </remarks>
+    /// <exception cref="ArgumentException">Thrown when a prefix is empty or both are the same.</exception>
+    Task<int> MoveFilesAsync(string sourcePrefix, string targetPrefix, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes every file whose path starts with a prefix — which is how a folder is removed.
+    /// </summary>
+    /// <param name="prefix">The beginning of the paths to remove. It cannot be empty: emptying a repository is not done by accident.</param>
+    /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation, containing the number of files removed.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="prefix"/> is empty.</exception>
+    Task<int> RemoveFilesAsync(string prefix, CancellationToken cancellationToken = default);
 }

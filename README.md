@@ -164,6 +164,31 @@ bool exists = await fileManager.FileExistsAsync("document.pdf");
 await fileManager.RemoveFileAsync("document.pdf");
 ```
 
+### Working with Paths and Folders
+
+A repository has no real folders: a folder is the prefix its files share. The operations below work on a path or on a prefix, and stay inside the repository.
+
+```csharp
+// List what is under a prefix, without downloading anything
+await foreach (FileDescriptor file in fileManager.ListFilesAsync("invoices/2026/"))
+    Console.WriteLine($"{file.Path} ({file.Size} bytes, {file.ContentType}, {file.LastModified})");
+
+// Write a file straight into a stream — a response body, a zip entry — instead of holding it in memory
+bool found = await fileManager.DownloadFileAsync("invoices/2026/january.pdf", destination);
+
+// Copy, and move — which is also how a file is renamed
+await fileManager.CopyFileAsync("invoices/2026/january.pdf", "archive/january.pdf");
+await fileManager.MoveFileAsync("invoices/2026/january.pdf", "invoices/2026/01.pdf");
+
+// Rename a folder: every file under the prefix moves, keeping the rest of its path
+int moved = await fileManager.MoveFilesAsync("drafts/", "final/");
+
+// Remove a folder
+int removed = await fileManager.RemoveFilesAsync("drafts/");
+```
+
+Moving is copying and then removing the original, one file at a time. If a move stops midway the file exists at both paths, never at none, and running `MoveFilesAsync` again finishes the job. `CopyFileAsync` and `MoveFileAsync` replace what is at the target and throw `FileNotFoundException` when the source does not exist. `RemoveFilesAsync` refuses an empty prefix, so a repository is never emptied by accident.
+
 ### Generating Signed URIs
 
 ```csharp
@@ -229,6 +254,55 @@ nuvtools-storage/
 │   └── NuvTools.Storage.Azure.Test/ # NUnit tests
 └── NuvTools.Storage.slnx           # Solution file
 ```
+
+## Releasing
+
+Publishing to nuget.org is irreversible per version, so the workflow makes it the last and smallest
+step.
+
+**One workflow per library.** Each package has its own, so a run and an approval each concern
+exactly one package. The steps themselves are shared, in the reusable `package-publish.yml`.
+
+| Package | Workflow | Release tag |
+|---|---|---|
+| `NuvTools.Storage` | `storage-publish.yml` | `storage-vX.Y.Z` |
+| `NuvTools.Storage.Azure` | `azure-publish.yml` | `azure-vX.Y.Z` |
+
+1. Set the package's `<Version>` in its `.csproj` and merge it. That is the version that gets
+   published; the workflow reads it and never computes one.
+2. Run the library's workflow by hand (*Actions → Storage Publish → Run workflow*) with *push*
+   checked.
+3. The workflow builds the solution with `-warnaserror`, runs the tests, takes **that package only**
+   from the build output, verifies it carries its README, licence, icon, symbols and every target
+   framework, and then waits for approval on the `nuget` GitHub Environment before pushing.
+4. **After the push succeeds, the workflow tags the commit** with the tag in the table above. The tag is a
+   record of what is on nuget.org, never what starts a release, so it cannot exist for a version
+   that did not get there. A run whose tag already exists stops before building: the version has
+   been released and `<Version>` needs a bump.
+
+**`NuvTools.Storage` goes first.** `NuvTools.Storage.Azure` references it as a project, so its package
+depends on whatever `<Version>` `NuvTools.Storage` has in that commit. The workflow checks that
+version is on nuget.org and refuses to push a package whose dependency is not there yet.
+
+That check knows a version exists, not what is in it. **When `IFileManager` gains a member, bump
+`NuvTools.Storage` and publish it, then bump and publish `NuvTools.Storage.Azure`** — an Azure package
+published against an older `NuvTools.Storage` would be paired, by whoever installs both, with a
+contract it does not implement.
+
+**Versions published by hand are refused.** Releases made before these workflows exist on nuget.org
+with no tag. Pushing one again would skip the duplicate and then tag the current commit as a
+release it is not, so a version that is already on nuget.org stops the run. The exception is a
+re-run of the same run, which is how a push that succeeded and a tag that failed gets finished.
+
+**No API key is stored.** The push uses nuget.org's trusted publishing: the job presents a GitHub
+OIDC token, nuget.org checks it against the policy registered for this repository and answers with a
+key that lives for one hour. The repository needs one secret, `NUGET_USER` — the nuget.org profile
+name the policy belongs to — and the policy itself, registered under *Trusted Publishing* on
+nuget.org with the owner `nuvtools`, the repository `nuvtools-storage`, the workflow file and the
+environment `nuget`.
+
+Run a library's workflow by hand with *push* unchecked for a dry run that stops after the
+verification.
 
 ## Documentation
 

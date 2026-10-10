@@ -54,6 +54,14 @@ The library uses a provider pattern where concrete implementations extend the co
   - `RemoveFileAsync()`: Deletes a file by ID
   - `FileExistsAsync()`: Checks file existence
   - `GetAccessRepositoryUri()`: Generates SAS URI with specified permissions
+  - `ListFilesAsync(prefix)`: Streams `FileDescriptor`s (path, size, last modified, content type) under a prefix
+  - `DownloadFileAsync(path, stream)`: Writes a file into a stream; `false` when it does not exist
+  - `CopyFileAsync()` / `MoveFileAsync()`: By path, inside the repository; moving is also renaming
+  - `MoveFilesAsync()` / `RemoveFilesAsync()`: By prefix — renaming and removing a "folder"
+
+- **FileDescriptor**: What a listing returns — a file without its content
+
+A repository has no folders, only prefixes. Folder conventions (a marker file for an empty folder, how many levels there are) belong to the application, not to this contract.
 
 - **IFile**: Represents a file with three possible states:
   - URI-only (metadata without content)
@@ -75,6 +83,9 @@ The library uses a provider pattern where concrete implementations extend the co
 2. **Parallel Uploads**: `AddFilesAsync()` uses `Task.WhenAll` for concurrent uploads
 3. **SAS Token Generation**: `GetAccessRepositoryUri()` generates 24-hour SAS tokens via `PermissionsHelper`
 4. **Pagination**: `GetFilesAsync()` uses Azure SDK's `AsPages()` for paginated listing
+5. **Copy through the client**: `CopyFileAsync()` reads the source and uploads the target instead of asking the service to copy, because a service-side copy needs the source readable by URL and a private container is not. `MoveFileAsync()` deletes the source only after the copy exists
+6. **Prefix operations list first**: `MoveFilesAsync()` and `RemoveFilesAsync()` collect the paths before acting, so a file already moved never comes up again in the listing; both are restartable, and `RemoveFilesAsync()` refuses an empty prefix
+7. **Not found**: a 404 from the service becomes `false` (`DownloadFileAsync`) or `FileNotFoundException` (`CopyFileAsync`/`MoveFileAsync`), so callers never catch an Azure exception
 
 ### File Handling
 
@@ -99,6 +110,7 @@ Tests use **Moq** to mock Azure SDK components:
 - Use `BlobsModelFactory` for creating Azure response objects
 - `Response.FromValue()` creates mock Azure responses
 - All tests verify proper cancellation token propagation
+- `AzureFileManagerPrefixTests` keeps one `Mock<BlobClient>` per path, so a test can assert which path was written and which was deleted
 
 Example test pattern:
 ```csharp
@@ -106,6 +118,16 @@ _mockBlobClient
     .Setup(b => b.ExistsAsync(It.IsAny<CancellationToken>()))
     .ReturnsAsync(Response.FromValue(true, Mock.Of<Response>()));
 ```
+
+## CI and Releasing
+
+`.github/workflows/ci.yml` builds the solution in Release with `-warnaserror` and runs the tests on every push and pull request to `main`.
+
+Each package has its own manually-run publish workflow (`storage-publish.yml`, `azure-publish.yml`), both calling the reusable `package-publish.yml`. It reads `<Version>` from the `.csproj` (never computes it), verifies the package, pushes through nuget.org trusted publishing behind the `nuget` environment, and then writes the release tag (`storage-vX.Y.Z`, `azure-vX.Y.Z`). See *Releasing* in the README.
+
+- A new package needs its own small workflow file and a row in the README table.
+- The SourceLink and symbol settings (`PublishRepositoryUrl`, `EmbedUntrackedSources`, `IncludeSymbols`, `snupkg`) must be in every packable project: the workflow fails a package without its `.snupkg`.
+- `NuvTools.Storage` is published first. A new `IFileManager` member means both packages get a new `<Version>`, the contract before the implementation.
 
 ## Multi-Targeting
 
